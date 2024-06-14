@@ -9,13 +9,14 @@ This Python script analyzes your Instagram followers and following lists to find
 
 ## Usage
 
-1. Clone the repository or download the script (`follower_analyzer.py`).
+1. Clone the repository or download the script (`follower_checker.py`).
 2. Run the script with Python, providing paths to the HTML files containing your followers and following lists as arguments.
 
-```python follower_analyzer.py --followers followers.html --following following.html```
+```python follower_checker.py --followers followers.html --following following.html```
 
 The script will then print a list of users who you follow but who don't follow you back.
 
-## How it works
+## Obtaining the HTML files
 
-The script parses HTML files containing your followers and following lists using BeautifulSoup. It then compares the two lists to find users who you follow but who don't follow you back.
+Before running the script, follow this [tutorial](https://help.instagram.com/181231772500920) to access and download your Instagram information. Ensure you select the option to only download your followers and following data to only get the necessary data. Remember to request data from any timeframe, not just the past year.
+
