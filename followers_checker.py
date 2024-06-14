@@ -1,10 +1,12 @@
 #!python3
 from bs4 import BeautifulSoup
 
+USER_TAG = 'a'
+USER_FILTER_OPT = 'target'
+TARGET = '_blank'
 
-USERS_CLASS = ['_ap3a', '_aaco', '_aacw', '_aacx', '_aad7', '_aade']
-FOLLOWING_HTML_FILE_PATH = "/Users/amitay/Downloads/following.htm"
-FOLLOWERS_HTML_FILE_PATH = "/Users/amitay/Downloads/followers.htm"
+FOLLOWING_HTML_FILE_PATH = "/Users/amitay/Downloads/instagram-amitay-2/connections/followers_and_following/following.html"
+FOLLOWERS_HTML_FILE_PATH = "/Users/amitay/Downloads/instagram-amitay-2/connections/followers_and_following/followers_1.html"
 
 
 def parse_html(file_path):
@@ -25,8 +27,8 @@ def extract_users(bs_obj):
    """
    users = []
 
-   for span in bs_obj.find_all('span'):
-      if span.get('class') == USERS_CLASS:
+   for span in bs_obj.find_all(USER_TAG):
+      if span.get(USER_FILTER_OPT) == TARGET:
          users.append(span.contents[0])
 
    return users
