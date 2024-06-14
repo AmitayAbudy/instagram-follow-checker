@@ -1,30 +1,17 @@
 import argparse
-import os
 from bs4 import BeautifulSoup
 
 USER_TAG = 'a'
-USER_FILTER_OPT = 'target'
-TARGET = '_blank'
-
-def file_exists(file_path):
-    """
-    Check if a file exists at the given path.
-    """
-    return os.path.exists(file_path) and os.path.isfile(file_path)
+TARGET_ATTR = 'target'
+TARGET_VALUE = '_blank'
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Extract users from HTML files and find who doesn't follow you back.")
-    parser.add_argument("--followers-file", "-f", help="Path to the HTML file containing followers", required=True)
-    parser.add_argument("--following-file", "-F", help="Path to the HTML file containing following", required=True)
-
+    parser = argparse.ArgumentParser(description="Extract users from HTML files and find who doesn't follow back.")
+    parser.add_argument("--followers", "-f", help="Path to the HTML file containing followers", required=True)
+    parser.add_argument("--following", "-F", help="Path to the HTML file containing following", required=True)
     return parser.parse_args()
 
 def parse_html(file_path):
-    """
-    This function gets a path to a html file
-    then reading and parsing it using BeautifulSoup
-    and returns the parsed object
-    """
     with open(file_path, "r") as f:
         return BeautifulSoup(f.read(), 'html.parser')
 
@@ -32,37 +19,34 @@ def extract_users(bs_obj):
     """
     This function gets a BeautifulSoup object
     the function returns the users from its file
-    using the hard-coded class identifier USER_CLASS
     """
     users = []
 
     for span in bs_obj.find_all(USER_TAG):
-        if span.get(USER_FILTER_OPT) == TARGET:
+        if span.get(TARGET_ATTR) == TARGET_VALUE:
             users.append(span.contents[0])
 
     return users
 
-def main():
-    args = parse_arguments()
+def find_non_followers(followers, following):
+    return [user for user in following if user not in followers]
 
-    if not file_exists(args.followers_file):
-        print(f"Error: Followers file '{args.followers_file}' not found or is not a file.")
-        return
-    if not file_exists(args.following_file):
-        print(f"Error: Following file '{args.following_file}' not found or is not a file.")
-        return
-
-    followers_soup = parse_html(args.followers_file)
-    following_soup = parse_html(args.following_file)
-
-    followers_usernames = extract_users(followers_soup)
-    following_usernames = extract_users(following_soup)
-
-    not_following_me = [user for user in following_usernames if user not in followers_usernames]
+def print_non_followers(non_followers):
     print("The Shame List: (people I follow who don't follow me)")
     print("-----------------------------------------------------")
-    for user in not_following_me:
+    for user in non_followers:
         print(user)
+
+def main():
+    args = parse_arguments()
+    followers_soup = parse_html(args.followers)
+    following_soup = parse_html(args.following)
+
+    followers = extract_users(followers_soup)
+    following = extract_users(following_soup)
+
+    non_followers = find_non_followers(followers, following)
+    print_non_followers(non_followers)
 
 if __name__ == '__main__':
     main()
