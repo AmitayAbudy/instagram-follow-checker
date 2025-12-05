@@ -35,7 +35,6 @@ python followers_checker.py --followers followers.html --following following.htm
 
 - `--skip-validation`, `-s`: skip the HTTP profile validation step and treat all detected non-followers as valid. Use this if you want a fast, offline run or to avoid making requests to Instagram.
 
-
 ## Network & rate-limiting
 
 - The script performs HTTP requests to Instagram for validation. Ensure you have network access when running it.
