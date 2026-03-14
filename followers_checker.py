@@ -14,29 +14,34 @@ def parse_arguments():
                         help="Skip HTTP validation of usernames (faster, offline)")
     return parser.parse_args()
 
-def parse_html(file_path):
-    with open(file_path, "r") as f:
+def parse_html(file_path: str) -> BeautifulSoup:
+    with open(file_path, "r", encoding="utf-8") as f:
         return BeautifulSoup(f.read(), 'html.parser')
 
-def extract_users(bs_obj):
+def extract_users(bs_obj: BeautifulSoup) -> list[str]:
     """
-    This function gets a BeautifulSoup object
-    the function returns the users from its file
+    Extracts and returns the list of usernames from the parsed HTML.
     """
     users = []
 
-    for span in bs_obj.find_all(USER_TAG):
-        if span.get(TARGET_ATTR) == TARGET_VALUE:
-            users.append(span.contents[0].split("/")[-1])
+    for tag in bs_obj.find_all(USER_TAG):
+        if tag.get(TARGET_ATTR) == TARGET_VALUE:
+            # Safely extract the text within the tag
+            username = tag.get_text(strip=True).split("/")[-1]
+            if username:
+                users.append(username)
 
     return users
 
-def find_non_followers(followers, following):
-    return [user for user in following if user not in followers]
+def find_non_followers(followers: list[str], following: list[str]) -> list[str]:
+    """Returns users in 'following' that are not in 'followers'."""
+    # Using a set for followers drastically improves lookup performance from O(N) to O(1)
+    followers_set = set(followers)
+    return [user for user in following if user not in followers_set]
 
 def check_username_existence(username: str) -> bool:
     url = "https://www.instagram.com/{username}/".format(username=username)
-
+    
     response = requests.get(url)
 
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -45,7 +50,7 @@ def check_username_existence(username: str) -> bool:
     og_desc_tag = soup.find('meta', property='og:description')
 
     # If both key meta tags are present, it's very likely a real profile page.
-    return og_type_tag and og_desc_tag
+    return bool(og_type_tag and og_desc_tag)
 
 def _show_progress(current: int, total: int, bar_length: int = 40) -> None:
     """Simple terminal progress bar for checking profiles."""
@@ -56,11 +61,11 @@ def _show_progress(current: int, total: int, bar_length: int = 40) -> None:
     bar = '#' * filled + '-' * (bar_length - filled)
     print(f"\rChecking profiles: |{bar}| {current}/{total}", end='', flush=True)
 
-
-def filter_existing_users(user_list):
+def filter_existing_users(user_list: list[str]) -> tuple[list[str], list[str]]:
     """Check which users exist on Instagram and return the filtered list.
 
-    Shows a simple progress bar while checking.
+    Shows a simple progress bar while checking. Adds a delay between requests 
+    to prevent aggressive rate limiting.
     """
     existing = []
     invalid = []
@@ -79,7 +84,7 @@ def filter_existing_users(user_list):
     print()
     return existing, invalid
 
-def print_non_followers(non_followers, follower_count: int, following_count: int, invalid_count: int = 0):
+def print_non_followers(non_followers: list[str], follower_count: int, following_count: int, invalid_count: int = 0):
     total_non = len(non_followers)
     header = f"The Shame List: followers={follower_count} following={following_count}"
     if invalid_count:
@@ -93,18 +98,15 @@ def print_non_followers(non_followers, follower_count: int, following_count: int
     for user in non_followers:
         print(user)
 
-
-def print_invalid_users(invalid_users):
+def print_invalid_users(invalid_users: list[str]):
+    if not invalid_users:
+        return
     print()
     header = "Username/Deleted changed users:"
     print(header)
     print('-' * len(header))
-    if not invalid_users:
-        print("(none)")
-        return
     for user in invalid_users:
         print(user)
-
 
 def main():
     args = parse_arguments()
@@ -122,8 +124,10 @@ def main():
         invalid_non_followers = []
     else:
         valid_non_followers, invalid_non_followers = filter_existing_users(non_followers)
+        
     invalid_count = len(invalid_non_followers)
     following_valid = len(following) - invalid_count
+    
     print_non_followers(valid_non_followers, len(followers), following_valid, invalid_count)
     print_invalid_users(invalid_non_followers)
 
