@@ -1,6 +1,6 @@
 # Instagram Follower Checker
 
-This Python script analyzes your Instagram followers and following lists (JSON exports) and prints which users you follow who don't follow you back.
+This Python script analyzes your Instagram followers and following lists (JSON or HTML exports) and prints which users you follow who don't follow you back.
 
 ## Requirements
 
@@ -12,7 +12,7 @@ This Python script analyzes your Instagram followers and following lists (JSON e
 ## Usage
 
 1. Clone the repository or download the script (`followers_checker.py`).
-2. Download your Instagram data in **JSON** format (see below).
+2. Download your Instagram data in **JSON** or **HTML** format (see below).
 3. Place the `connections` folder in the same directory as the script.
 4. Run the script:
 
@@ -24,7 +24,7 @@ By default, the script looks for:
 - Followers: `connections/followers_and_following/followers_1.json`
 - Following: `connections/followers_and_following/following.json`
 
-You can also specify paths manually:
+You can also specify paths manually (supports both `.json` and `.html` files):
 
 ```bash
 python followers_checker.py --followers custom_followers.json --following custom_following.json
@@ -52,14 +52,11 @@ python followers_checker.py --skip-validation
 - `--revalidate`, `-r`: force re-validation of all profile statuses over the network, updating the cache.
 - `--non-interactive`, `-n`: disable the interactive menu loop post-run (useful for automated scripts).
 
-
-
-
 ## Network & rate-limiting
 
 - The script performs HTTP requests to Instagram for validation. Ensure you have network access when running it.
 - To reduce the chance of rate-limiting, avoid running the script repeatedly in quick succession.
 
-## Obtaining the JSON files
+## Obtaining your Instagram data
 
-Before running the script, follow this [tutorial](https://help.instagram.com/181231772500920) to access and download your Instagram information. **Make sure to select JSON format** instead of HTML when requesting the download. Select only the option to download your followers and following data. Also remember to request data from "All time", not just the past year.
+Before running the script, follow this [tutorial](https://help.instagram.com/181231772500920) to access and download your Instagram information. You can select either JSON or HTML format. Select only the option to download your followers and following data. Also remember to request data from "All time", not just the past year.

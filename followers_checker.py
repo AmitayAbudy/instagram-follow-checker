@@ -6,6 +6,11 @@ import sys
 import re
 from bs4 import BeautifulSoup
 
+# HTML parsing tag definitions
+USER_TAG = "a"
+TARGET_ATTR = "target"
+TARGET_VALUE = "_blank"
+
 # Try importing rich for UI enhancements
 try:
     from rich.console import Console
@@ -22,9 +27,9 @@ except ImportError:
     HAS_RICH = False
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Extract users from Instagram JSON files and find who doesn't follow back.")
-    parser.add_argument("--followers", "-f", help="Path to the JSON file containing followers", default="connections/followers_and_following/followers_1.json")
-    parser.add_argument("--following", "-F", help="Path to the JSON file containing following", default="connections/followers_and_following/following.json")
+    parser = argparse.ArgumentParser(description="Extract users from Instagram JSON or HTML files and find who doesn't follow back.")
+    parser.add_argument("--followers", "-f", help="Path to the file containing followers (JSON or HTML)", default="connections/followers_and_following/followers_1.json")
+    parser.add_argument("--following", "-F", help="Path to the file containing following (JSON or HTML)", default="connections/followers_and_following/following.json")
     parser.add_argument("--skip-validation", "-s", action="store_true", help="Skip HTTP validation of usernames (faster, offline)")
     parser.add_argument("--cache-file", "-c", help="Path to the profile JSON cache file", default="profile_cache.json")
     parser.add_argument("--ignored-file", "-i", help="Path to the ignored/expected non-followers JSON file", default="ignored_users.json")
@@ -33,6 +38,18 @@ def parse_arguments():
     return parser.parse_args()
 
 def extract_followers(file_path: str) -> list[str]:
+    """Extracts usernames from a followers JSON or HTML export file."""
+    if file_path.lower().endswith(('.html', '.htm')):
+        with open(file_path, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), 'html.parser')
+        users = []
+        for tag in soup.find_all(USER_TAG):
+            if tag.get(TARGET_ATTR) == TARGET_VALUE:
+                username = tag.get_text(strip=True).split("/")[-1]
+                if username:
+                    users.append(username)
+        return users
+    
     with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     users = []
@@ -44,6 +61,18 @@ def extract_followers(file_path: str) -> list[str]:
     return users
 
 def extract_following(file_path: str) -> list[str]:
+    """Extracts usernames from a following JSON or HTML export file."""
+    if file_path.lower().endswith(('.html', '.htm')):
+        with open(file_path, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), 'html.parser')
+        users = []
+        for tag in soup.find_all(USER_TAG):
+            if tag.get(TARGET_ATTR) == TARGET_VALUE:
+                username = tag.get_text(strip=True).split("/")[-1]
+                if username:
+                    users.append(username)
+        return users
+
     with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     users = []
@@ -60,6 +89,7 @@ def extract_following(file_path: str) -> list[str]:
     return users
 
 def find_non_followers(followers: list[str], following: list[str]) -> list[str]:
+    """Returns users in 'following' that are not in 'followers'."""
     followers_set = set(followers)
     return [user for user in following if user not in followers_set]
 
@@ -89,7 +119,6 @@ def load_profile_cache(cache_file: str) -> tuple[set[str], set[str]]:
     valid_set = set()
     invalid_set = set()
 
-    # Load legacy invalid_users_cache.json if present
     if os.path.exists("invalid_users_cache.json"):
         try:
             with open("invalid_users_cache.json", "r", encoding="utf-8") as f:
@@ -99,7 +128,6 @@ def load_profile_cache(cache_file: str) -> tuple[set[str], set[str]]:
         except Exception:
             pass
 
-    # Load primary profile_cache.json
     if os.path.exists(cache_file):
         try:
             with open(cache_file, "r", encoding="utf-8") as f:
@@ -123,7 +151,6 @@ def save_profile_cache(cache_file: str, valid_set: set[str], invalid_set: set[st
         }
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-        # Keep legacy invalid_users_cache.json in sync
         with open("invalid_users_cache.json", "w", encoding="utf-8") as f:
             json.dump(sorted(list(invalid_set)), f, indent=2)
     except Exception as e:
@@ -176,7 +203,6 @@ def filter_existing_users(user_list: list[str], cache_file: str = "profile_cache
                 invalid_cache.add(user)
                 valid_cache.discard(user)
             
-            # Periodically save cache every 10 profile checks so progress is persisted incrementally
             if http_checks % 10 == 0:
                 save_profile_cache(cache_file, valid_cache, invalid_cache)
 
@@ -248,7 +274,6 @@ def display_dashboard(followers_count: int, following_count: int,
         
         console.print(Panel(stats_table, title="[bold]Summary Dashboard[/bold]", border_style="magenta"))
 
-        # Render Shame List in a nice multi-column layout
         if shame_list:
             table = Table(title=f"⚠️ The Shame List ({len(shame_list)} non-followers)", show_lines=False, border_style="red")
             table.add_column("#", style="dim", width=5)
@@ -258,7 +283,6 @@ def display_dashboard(followers_count: int, following_count: int,
             table.add_column("#", style="dim", width=5)
             table.add_column("Username", style="bold white", width=25)
 
-            # Group by 3 per row
             for i in range(0, len(shame_list), 3):
                 row = []
                 for j in range(3):
@@ -361,7 +385,6 @@ def interactive_loop(followers_count: int, following_count: int,
     ignored_users = load_ignored_users(ignored_file)
 
     while True:
-        # Separate into shame list and expected list
         shame_list = [u for u in valid_non_followers if u not in ignored_users]
         expected_list = [u for u in valid_non_followers if u in ignored_users]
 
@@ -480,10 +503,10 @@ def main():
         following = extract_following(args.following)
     except FileNotFoundError as e:
         print(f"Error: {e}")
-        print("Please check the path to your JSON files.")
+        print("Please check the path to your JSON/HTML files.")
         return
     except json.JSONDecodeError:
-        print("Error: Could not decode JSON files. Are you sure they are valid Instagram exports?")
+        print("Error: Could not decode JSON files. Are you sure they are valid Instagram exports? (Use .html extension for HTML files).")
         return
 
     non_followers = find_non_followers(followers, following)
