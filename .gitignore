@@ -1,0 +1,19 @@
+# Cache and Ignored files
+invalid_users_cache.json
+profile_cache.json
+ignored_users.json
+*.cache.json
+*.ignored.json
+
+# User Data / Instagram Export Files
+connections/
+*.html
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+
+# OS files
+.DS_Store
+
+

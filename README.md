@@ -7,6 +7,7 @@ This Python script analyzes your Instagram followers and following lists (JSON e
 - Python 3
 - `requests` (`pip install requests`)
 - BeautifulSoup (`pip install beautifulsoup4`)
+- `rich` (`pip install rich`) — optional but recommended for enhanced terminal UI
 
 ## Usage
 
@@ -35,17 +36,24 @@ You can skip network validation (faster, offline) with:
 python followers_checker.py --skip-validation
 ```
 
-## What the script does (notes)
+## Features & Terminal UI
 
-- The script extracts usernames from the provided JSON files and computes users you follow who don't follow you back.
-- Before printing, the script validates each non-follower by requesting the profile page on Instagram. A small terminal progress bar shows validation progress.
-- Output sections:
-  - The Shame List: validated users you follow who don't follow you back. The header shows `followers=... following=...` and how many invalid profiles were removed.
-  - Deleted/Blocked users: user names that appear removed/blocked (invalid profiles) and were excluded from the main list.
+- **Rich Terminal Dashboard**: Displays summary stats, categorized multi-column tables, and badges for easy scanning.
+- **Interactive Flagging**: Post-run terminal menu allows you to flag celebrities, public figures, or brand accounts you don't expect to follow you back. Flagged accounts are saved to `ignored_users.json` and automatically separated from **The Shame List** on future runs.
+- **Full Profile Caching**: Caches validation results (both valid active profiles and invalid/deleted profiles) in `profile_cache.json`. Subsequent runs skip HTTP checks for all cached profiles, executing instantly!
+- **Incremental Cache Persistence**: Saves progress every 10 network checks so progress is never lost even if interrupted.
+- **Search & Export**: Interactively search for usernames, export structured reports, or trigger on-demand profile re-validation.
 
 ## CLI flags
 
-- `--skip-validation`, `-s`: skip the HTTP profile validation step and treat all detected non-followers as valid. Use this if you want a fast, offline run or to avoid making requests to Instagram.
+- `--skip-validation`, `-s`: skip the HTTP profile validation step and treat all detected non-followers as valid.
+- `--cache-file`, `-c`: path to the JSON file storing cached profile validation statuses (default: `profile_cache.json`).
+- `--ignored-file`, `-i`: path to the JSON file storing expected non-followers / celebrities (default: `ignored_users.json`).
+- `--revalidate`, `-r`: force re-validation of all profile statuses over the network, updating the cache.
+- `--non-interactive`, `-n`: disable the interactive menu loop post-run (useful for automated scripts).
+
+
+
 
 ## Network & rate-limiting
 
